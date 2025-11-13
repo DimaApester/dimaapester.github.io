@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html style="background: rgb(253, 233, 235);">
+
+<head>
+    <title>Staging</title>
+</head>
+
+<body>
+    <script>
+        console.log("DIMA");
+    </script>
+    <!-- <div class="apester-media" data-media-id="674da8162abd871578134534"></div>
+    <div class="apester-media" data-media-id="66a7920466872d1a9e0a12de"></div> -->
+<div class="apester-media" data-token="66151e8b5dc875f45f5950e2" data-context="true" data-tags="" data-fallback="true" height="350"></div><script type="module" src="https://sdk.stg.apester.dev/web-sdk.core.min.js"></script><script nomodule src="https://sdk.stg.apester.dev/web-sdk.core.legacy.min.js" async></script>    <!-- <div class="apester-media" data-media-id="67403f914b772fe6748f5b73"></div> -->
+    <!-- <script type="module" src="https://sdk.stg.apester.dev/web-sdk.core.min.js"></script><script nomodule src="https://sdk.stg.apester.dev/web-sdk.core.legacy.min.js" async></script> -->
+    <!-- <div class="apester-media" data-media-id="6673e676952b302811b65d36"></div> -->
+    <!-- <script type="module" src="https://sdk.stg.apester.dev/web-sdk.core.min.js"></script><script nomodule src="https://sdk.stg.apester.dev/web-sdk.core.legacy.min.js" async></script> -->
+    <script>
+        function waitForApesterDispatcher(callback) {
+            let interval = setInterval(() => {
+                if (window.ApesterDispatcher) {
+                    clearInterval(interval); // ✅ Stop checking once it's available
+                    callback(window.ApesterDispatcher);
+                }
+            }, 1000); // ✅ Keep checking every 50ms indefinitely
+        }
+
+        function subscribeToApester(event, callback) {
+            waitForApesterDispatcher((dispatcher) => {
+                dispatcher.subscribe(event, callback);
+                console.log(`✅ Customer -> Subscribed to ${event}`);
+            });
+        }
+
+        // ✅ This will now ALWAYS subscribe when `ApesterDispatcher` is available
+        subscribeToApester("picked_answer", function (event) {
+            console.log("✅ Customer -> Received picked_answer event:", event);
+        });
+
+
+    </script>
+</body>
+
+</html>

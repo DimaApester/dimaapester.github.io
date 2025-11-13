@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample Layout</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header, footer {
+      width: 100%;
+      background-color: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .main-container {
+      width: 1080px;
+      display: flex;
+      margin: 40px 0 0 0;
+    }
+    .main-container.main-container-2 {
+        margin: 0;
+    
+    }
+
+    .left {
+      width: 670px;
+      padding: 0 20px;
+      background-color: #e6f7ff;
+    }
+    .apester-container {
+        background-color: #ff0000;
+    }
+
+    .right {
+      flex: 1;
+      padding: 0 20px;
+      background-color: #fffbe6;
+    }
+
+    footer a {
+      margin: 0 10px;
+      color: #333;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>My Website</h1>
+  </header>
+
+  <div class="main-container">
+    <div class="left">
+      <h2>Left Section</h2>
+      <p>This is wide.</p>
+      <div class="apester-container">
+      <div class="apester-media" data-media-id="66816089cf527910a63c3dd8"></div>
+    </div>
+    </div>
+    <div class="right">
+      <h2>Right Section</h2>
+      <p>This fills the remaining container.</p>
+    </div>
+  </div>
+  <hr />
+  <div class="main-container">
+    <div class="left">
+      <h2>Left Section</h2>
+      <p>This is wide.</p>
+      <div class="apester-container">
+        <div class="apester-media" data-media-id="67dbd082f9217db4b326b9b7"></div>
+    </div>
+    </div>
+    <div class="right">
+      <h2>Right Section</h2>
+      <p>This fills the remaining container.</p>
+    </div>
+  </div>
+
+  text, test, text
+  <div class="main-container main-container-2">
+    <div class="left">
+      <h2>Left Section</h2>
+      <p>This is 528px wide.</p>
+    </div>
+    <div class="right">
+      <h2>Right Section</h2>
+      <p>This fills the remaining 2px of the 108055px container.</p>
+    </div>
+  </div>
+
+  <footer>
+    <a href="#">Home</a>
+    <a href="#">About</a>
+    <a href="#">Contact</a>
+  </footer>
+  <script type="module" src="https://sdk.stg.apester.dev/web-sdk.core.min.js"></script>
+  <script nomodule src="https://sdk.stg.apester.dev/web-sdk.core.legacy.min.js" async></script> 
+</body>
+</html>

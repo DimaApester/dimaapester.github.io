@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html style="background: rgb(253, 233, 235);">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<head>
+    <title>Ynet</title>
+</head>
+
+<body>
+    <div class="apester-media" data-media-id="69fb493a8dac849ea2acf718"></div>
+        
+    <script type="module" src="https://sdk.apester.com/web-sdk.core.min.js"></script>
+    <script nomodule src="https://sdk.apester.com/web-sdk.core.legacy.min.js" async></script>
+    <!-- <script>
+        window.ApesterDispatcher.subscribe("picked_answer", (event) => console.log("Received picked_answer event:", event));
+    </script> -->
+    <script>
+        function waitForApesterDispatcher(callback) {
+            let interval = setInterval(() => {
+                if (window.ApesterDispatcher) {
+                    clearInterval(interval); //  Stop checking once it's available
+                    callback(window.ApesterDispatcher);
+                }
+            }, 1000); // Keep checking every 1s indefinitely
+        }
+
+        function subscribeToApester(event, callback) {
+            waitForApesterDispatcher((dispatcher) => {
+                dispatcher.subscribe(event, callback);
+                console.log(`Subscribed to ${event}`);
+            });
+        }
+
+        subscribeToApester("picked_answer", function (event) {
+            console.log("Received picked_answer event:", event);
+        });
+    </script>
+</body>
+
+</html>

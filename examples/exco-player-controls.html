@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EX.CO Player Controls</title>
+  <style id="hide-ui"></style>
+  <style>
+    :root { --panel: 460px; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 0; color: #111; background: #fff; }
+    main { margin-right: var(--panel); padding: 16px; }
+    p { line-height: 1.5; max-width: 640px; }
+    #unit { border: 2px solid #4a6; border-radius: 8px; padding: 12px; max-width: 680px; background: #f6fbf7; }
+    #unit h2 { margin: 0 0 8px; font-size: 16px; }
+    #slot-wrap { position: relative; display: inline-block; }
+    #exco-slot { background: #000; overflow: hidden; position: relative; }
+    #slot-wrap.lang-en::after, #slot-wrap.lang-de::after { position: absolute; top: -16px; left: 0; width: 100%;
+      font-size: 11px; text-align: left; color: #999; }
+    #slot-wrap.lang-en::after { content: 'Sponsored'; }
+    #slot-wrap.lang-de::after { content: 'Anzeige'; }
+    #slot-wrap { margin-top: 16px; }
+    aside { position: fixed; top: 0; right: 0; width: var(--panel); height: 100vh; overflow: auto;
+      border-left: 1px solid #ccc; background: #fafafa; padding: 10px 12px; font-size: 13px; }
+    aside h3 { margin: 10px 0 4px; font-size: 13px; text-transform: uppercase; color: #555; }
+    button { margin: 2px; padding: 5px 9px; font-size: 13px; border: 1px solid #888; border-radius: 4px;
+      background: #fff; cursor: pointer; }
+    button.main { background: #2a7; color: #fff; border-color: #2a7; }
+    button.ours { background: #36c; color: #fff; border-color: #36c; }
+    label { margin-right: 8px; white-space: nowrap; }
+    input[type=number] { width: 64px; }
+    #video, #ad, #adCount { font-family: ui-monospace, monospace; font-size: 12px; background: #fff; border: 1px solid #ddd;
+      padding: 6px; white-space: pre-wrap; word-break: break-all; }
+    #log { font-family: ui-monospace, monospace; font-size: 12px; background: #111; color: #9f9; padding: 6px;
+      height: 46vh; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+    #log .ev { color: #fff; }
+    #log .ours { color: #8cf; }
+    #log .err { color: #f88; }
+    #log .net { color: #fc6; }
+    @media (max-width: 900px) { :root { --panel: 100vw; } main { margin-right: 0; padding-bottom: 70vh; }
+      aside { top: auto; bottom: 0; height: 60vh; border-left: 0; border-top: 1px solid #ccc; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>EX.CO player controls (no web-sdk)</h1>
+  <p>EX.CO in programmatic mode, player ab5e9157, driven by hand from the panel. Nothing of web-sdk runs here.
+    Next ad: "new instance" is what web-sdk#1303 does (destroy after every ad, a new instance for the next one).</p>
+  <div id="unit">
+    <h2>Unit (stands in for our interaction)</h2>
+    <div id="slot-wrap">
+      <div id="exco-slot"></div>
+    </div>
+  </div>
+</main>
+
+<aside>
+  <h3>Setup (before create)</h3>
+  <div>
+    <label>Slot <select id="size">
+      <option>300x250</option><option>320x180</option><option>400x225</option>
+      <option selected>640x360</option><option>600x600</option>
+    </select></label>
+    <label><input type="checkbox" id="autoPlay" checked> autoPlay</label>
+    <label><input type="checkbox" id="mute" checked> mute</label>
+  </div>
+
+  <h3>Hide EX.CO's ad UI (CSS, class names as found on the ad)</h3>
+  <div>
+    <label><input type="checkbox" class="hideUi" value="toolbar" checked> pause, sound</label>
+    <label><input type="checkbox" class="hideUi" value="timer"> timer</label>
+    <label><input type="checkbox" class="hideUi" value="progress" checked> progress bar</label>
+    <label><input type="checkbox" class="hideUi" value="adLabel" checked> EX.CO's "Ad" label</label>
+    <label><input type="checkbox" class="hideUi" value="keepWatching"> "Keep Watching"</label>
+  </div>
+  <div>
+    <label>Our label (as web-sdk) <select id="ourLabel">
+      <option value="en" selected>Sponsored</option><option value="de">Anzeige</option><option value="">none</option>
+    </select></label>
+  </div>
+
+  <h3>Player methods</h3>
+  <div>
+    <button class="main" data-act="createInit" type="button">create + init</button>
+    <button data-act="play" type="button">play</button>
+    <button data-act="pause" type="button">pause</button>
+    <button data-act="hide" type="button" title="Ends the slot (ad-skipped, slot-end) and collapses the player to 0 px">hide (ends ad, 0 px)</button>
+    <button data-act="show" type="button" title="Un-hides only: the player stays 0 px tall after hide, no ad starts">show (un-hide only, no ad)</button>
+    <button data-act="mute" type="button">mute</button>
+    <button data-act="unmute" type="button">unmute</button>
+    <label>volume <input type="range" id="volume" min="0" max="1" step="0.1" value="0.5"></label>
+    <button data-act="setVolume" type="button">setVolume</button>
+    <button data-act="destroy" type="button">destroy</button>
+  </div>
+  <div>
+    <button class="main" data-act="nextAdNew" type="button">next ad: new instance (destroy + create + init)</button>
+    <button class="ours" data-act="nextAd" type="button">next ad: same instance (show + pause + play)</button>
+    <button class="ours" data-act="endOurWay" type="button">end ad our way (hide + pause)</button>
+    <button data-act="methods" type="button">list methods</button>
+    <button data-act="clear" type="button">clear log</button>
+  </div>
+
+  <h3>Ad count (from EX.CO's ad events)</h3>
+  <div id="adCount">no ad yet</div>
+  <h3>Ad (from EX.CO's ad events)</h3>
+  <div id="ad">no ad event yet</div>
+  <h3>Player video element (live)</h3>
+  <div id="video">no video element yet</div>
+
+  <h3>Log (time since page load)</h3>
+  <div id="log"></div>
+</aside>
+
+<script>
+  const PLAYER_ID = 'ab5e9157-9db2-40bb-a16e-12021f9c8f55';
+  // The events web-sdk listens to (ExcoAPI enums); any extra names the player lists in EVENTS are added at create
+  const KNOWN_EVENTS = ['player-ready', 'slot-start', 'slot-auction-completed', 'ad-init', 'ad-started', 'ad-impression',
+    'ad-play', 'ad-pause', 'ad-completed', 'ad-skipped', 'ad-error', 'slot-end', 'player-in', 'player-out'];
+  const $ = (id) => document.getElementById(id);
+  const slot = $('exco-slot');
+  let player = null;
+
+  const t = () => `+${(performance.now() / 1000).toFixed(2)}s`;
+  const safe = (o) => { try { return JSON.stringify(o); } catch (e) { return String(o); } };
+  function log(msg, data, cls) {
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = `${t()} ${msg}${data !== undefined ? ' ' + safe(data) : ''}`;
+    $('log').appendChild(line);
+    $('log').scrollTop = $('log').scrollHeight;
+  }
+
+  function videoEl() {
+    return slot.querySelector('video') || document.querySelector('video');
+  }
+  function videoState() {
+    const v = videoEl();
+    if (!v) return null;
+    return { src: v.currentSrc || v.src, currentTime: +v.currentTime.toFixed(2), duration: +(v.duration || 0).toFixed(2),
+      size: `${v.videoWidth}x${v.videoHeight} (box ${v.clientWidth}x${v.clientHeight})`, muted: v.muted, paused: v.paused };
+  }
+  // Counts per page load; "this player" resets on create, so a new instance starts again at ad 1
+  const ads = { page: 0, player: 0, completed: 0, skipped: 0, errors: 0, current: null };
+  function countAd(name) {
+    if (name === 'ad-impression') {
+      ads.page += 1; ads.player += 1; ads.current = ads.page;
+      log(`AD #${ads.page} on this page (#${ads.player} on this player)`, undefined, 'ours');
+    }
+    if (name === 'ad-completed') ads.completed += 1;
+    if (name === 'ad-skipped') ads.skipped += 1;
+    if (name === 'ad-error') ads.errors += 1;
+    if (['ad-completed', 'ad-skipped', 'slot-end'].includes(name)) ads.current = null;
+    $('adCount').textContent = `playing now: ${ads.current ? `ad #${ads.current}` : 'none'}\n`
+      + `ads this page: ${ads.page} (this player: ${ads.player})\n`
+      + `completed ${ads.completed} · skipped/ended ${ads.skipped} · errors ${ads.errors}`;
+  }
+  let lastAd = null;
+  function adState(name, d) {
+    if (!d || !d.progress) return;
+    // Quartile events carry no bidder/cpm: keep the last known values
+    const next = { event: name, at: t(), bidder: d.bidder, cpm: d.cpm, time: d.progress.time, duration: d.progress.duration,
+      skippable: d.skippable, skipOffset: d.skipOffset, viewability: d.viewability };
+    Object.keys(next).forEach((k) => { if (next[k] === undefined && lastAd) next[k] = lastAd[k]; });
+    lastAd = next;
+    $('ad').textContent = Object.entries(lastAd).map(([k, v]) => `${k}: ${typeof v === 'number' ? +v.toFixed(2) : v}`).join('\n');
+  }
+  setInterval(() => {
+    const s = videoState();
+    $('video').textContent = s ? Object.entries(s).map(([k, v]) => `${k}: ${v}`).join('\n') : 'no video element yet';
+  }, 250);
+
+  function applySize() {
+    const [w, h] = $('size').value.split('x').map(Number);
+    slot.style.width = `${w}px`;
+    slot.style.height = `${h}px`;
+  }
+  $('size').addEventListener('change', () => { applySize(); log(`slot size ${$('size').value}`, undefined, 'ours'); });
+  applySize();
+
+  // The player script carries the dashboard settings; the browser caches it, so refresh it first and print
+  // the schedule in effect (a dashboard save is otherwise not seen until the cache expires)
+  async function freshConfig() {
+    try {
+      const text = await (await fetch(`https://player.ex.co/player/${PLAYER_ID}`, { cache: 'reload', credentials: 'omit' })).text();
+      const start = text.match(/"playerStart":\{"enabled":(true|false),"timeout":(\d+),"maxImpressions":(\d+)/);
+      const mid = text.match(/"preRoll":\{"enabled":(true|false)[^}]*?"maxImpressions":(\d+)/);
+      const brk = text.match(/"breakingAds":\{"enabled":(true|false),"interval":(\d+),"maxImpressions":(\d+)/);
+      log('EX.CO schedule in effect', {
+        preRoll: start ? { on: start[1] === 'true', timeoutS: +start[2], ads: +start[3] } : 'not found',
+        midRoll: mid ? { on: mid[1] === 'true', ads: +mid[2] } : 'not found',
+        breakingAds: brk ? { on: brk[1] === 'true', intervalS: +brk[2], ads: +brk[3] } : 'not found',
+      }, 'net');
+    } catch (e) { log('could not read the player config', String(e), 'err'); }
+  }
+
+  async function loadSdk() {
+    if (!window.ExCoPlayer) await freshConfig();
+    return new Promise((resolve, reject) => {
+      if (window.ExCoPlayer) return resolve(window.ExCoPlayer);
+      const s = document.createElement('script');
+      s.src = `https://player.ex.co/player/${PLAYER_ID}`;
+      s.setAttribute('programmatic', 'true');
+      s.setAttribute('multiple', 'true');
+      s.onload = () => {
+        const started = Date.now();
+        (function check() {
+          if (window.ExCoPlayer) resolve(window.ExCoPlayer);
+          else if (Date.now() - started > 10000) reject(new Error('ExCoPlayer global not available'));
+          else setTimeout(check, 50);
+        })();
+      };
+      s.onerror = () => reject(new Error('EX.CO script load failed'));
+      document.body.appendChild(s);
+    });
+  }
+
+  function wire(p) {
+    const names = new Set(KNOWN_EVENTS);
+    if (p.EVENTS) Object.values(p.EVENTS).forEach((n) => typeof n === 'string' && names.add(n));
+    names.forEach((name) => {
+      try {
+        p.on(name, (data) => {
+          log(`▷ ${name}`, data, name === 'ad-error' ? 'err' : 'ev');
+          adState(name, data);
+          countAd(name);
+          if (name === 'ad-impression') setOurLabel(true);
+          if (name === 'slot-end') setOurLabel(false);
+        });
+      } catch (e) { log(`cannot listen to ${name}`, String(e), 'err'); }
+    });
+    log(`listening to ${names.size} events`, [...names]);
+  }
+
+  async function createInit() {
+    if (player) return log('a player exists: destroy it first', undefined, 'err');
+    applySize();
+    ads.player = 0;
+    slot.innerHTML = '<div id="exco-target" style="width:100%;height:100%"></div>';
+    const global = await loadSdk();
+    const api = global.connect(PLAYER_ID);
+    player = api.create ? await api.create({ selector: '#exco-target' }) : api;
+    wire(player);
+    const options = { autoPlay: $('autoPlay').checked, mute: $('mute').checked, showAds: true,
+      sticky: { desktop: { enabled: false }, mobile: { enabled: false } } };
+    log('init', options, 'ours');
+    Promise.resolve(player.init(options)).then(() => log('init() resolved'), (e) => log('init() rejected', String(e), 'err'));
+  }
+
+  function call(method, ...args) {
+    if (!player) return log(`${method}: create the player first`, undefined, 'err');
+    if (typeof player[method] !== 'function') return log(`${method} is not a function on this player`, undefined, 'err');
+    log(`${method}(${args.map(safe).join(', ')})`, undefined, 'ours');
+    try {
+      const r = player[method](...args);
+      if (r && typeof r.then === 'function') r.then(() => {}, (e) => log(`${method} rejected`, String(e), 'err'));
+    } catch (e) { log(`${method} threw`, String(e), 'err'); }
+  }
+
+  const actions = {
+    createInit: () => createInit().catch((e) => log('create failed', String(e), 'err')),
+    play: () => call('play'),
+    pause: () => call('pause'),
+    hide: () => call('hide'),
+    show: () => call('show'),
+    mute: () => call('mute'),
+    unmute: () => call('unmute'),
+    setVolume: () => call('setVolume', Number($('volume').value)),
+    destroy: () => { call('destroy'); player = null; setOurLabel(false); },
+    // Same instance, no destroy: show, pause (restarts a stuck slot), play (11-12 design, not what #1303 ships)
+    nextAd: () => { if (!player) return actions.createInit(); call('show'); call('pause'); call('play'); },
+    // End the ad without destroy: hide ends the slot, pause stops EX.CO's own schedule
+    endOurWay: () => { setOurLabel(false); call('hide'); call('pause'); },
+    methods: () => {
+      if (!player) return log('create the player first', undefined, 'err');
+      const keys = new Set(Object.keys(player));
+      let proto = Object.getPrototypeOf(player);
+      while (proto && proto !== Object.prototype) { Object.getOwnPropertyNames(proto).forEach((k) => keys.add(k)); proto = Object.getPrototypeOf(proto); }
+      log('methods', [...keys].filter((k) => { try { return typeof player[k] === 'function'; } catch (e) { return false; } }).sort());
+    },
+    // The way that fills with the test demand today: a fresh EX.CO instance in the same slot
+    nextAdNew: async () => {
+      if (player) { call('destroy'); player = null; setOurLabel(false); }
+      await actions.createInit();
+    },
+    clear: () => { $('log').innerHTML = ''; },
+  };
+  document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => actions[b.dataset.act]()));
+
+
+  // EX.CO's docs (video-channels/control.md, "Custom player controls") name .exp-ui__pause-button and
+  // .exp-ui__sound-button for styling; the toolbar, timer and progress classes are as found on the ad (not in the docs)
+  const HIDE_UI = {
+    toolbar: '#exco-slot .exp-ui__pause-button, #exco-slot .exp-ui__sound-button',
+    timer: '#exco-slot .exp-ui__timer',
+    progress: '#exco-slot .exp-ui__simple-progress',
+    keepWatching: '#exco-slot [class*="exp-ui__keep-watching"]',
+    adLabel: '#exco-slot .exp-ui__ad-label',
+  };
+  function applyHideUi() {
+    const picked = [...document.querySelectorAll('.hideUi')].filter((c) => c.checked).map((c) => c.value);
+    $('hide-ui').textContent = picked.map((k) => `${HIDE_UI[k]} { display: none !important; }`).join('\n');
+    // The toolbar's dark gradient sits on its wrapper
+    if (picked.includes('toolbar')) $('hide-ui').textContent += '\n#exco-slot .exp-ui__ads-ui-wrapper { background: none !important; }';
+    log(`ad UI hidden: ${picked.join(', ') || 'none'}`, undefined, 'ours');
+  }
+  document.querySelectorAll('.hideUi').forEach((c) => c.addEventListener('change', applyHideUi));
+  // Our label shows only while an ad plays, as web-sdk adds the language class on reveal and removes it on hide
+  const setOurLabel = (on) => {
+    const wrap = $('slot-wrap');
+    wrap.classList.remove('lang-en', 'lang-de');
+    if (on && $('ourLabel').value) wrap.classList.add(`lang-${$('ourLabel').value}`);
+  };
+  applyHideUi();
+
+  // Network: every VAST and media file the page loads (EX.CO fetches both in the page), to see what a slot asked for
+  try {
+    new PerformanceObserver((list) => list.getEntries().forEach((e) => {
+      let url;
+      try { url = new URL(e.name); } catch (err) { return; }
+      const file = url.pathname.split('/').pop();
+      if (/vast|\.xml$|\.mp4$|\.webm$|\.m3u8$/i.test(file) || /vast/i.test(url.search)) {
+        log(`⇣ ${url.host}/${file} (${Math.round(e.duration)} ms)`, undefined, 'net');
+      }
+    })).observe({ type: 'resource', buffered: false });
+  } catch (e) { log('no PerformanceObserver: network lines off', undefined, 'err'); }
+  log('page loaded; pick setup, then "create + init"');
+</script>
+</body>
+</html>
